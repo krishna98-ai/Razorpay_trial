@@ -8,21 +8,24 @@ dotenv.config({
   path: "./.env",
 });
 
-const app = express();
+const server = express();
 
-app.use(cors({
-  origin:"*"
-}));
-app.use(express.json());
+server.use(
+  cors({
+    origin: "*",
+  }),
+);
 
-app.get("/", (req, res) => {
-  res.send("Razorpay backend is running");
+server.use(express.json());
+
+server.get("/", (req, res) => {
+  res.send("Payment server is running");
 });
 
-app.use("/api/v1/payments", paymentRouter);
+server.use("/api/v1/payments", paymentRouter);
 
-const PORT = process.env.PORT || 5000;
+const serverPort = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+server.listen(serverPort, () => {
+  console.log(`Server started on port ${serverPort}`);
 });

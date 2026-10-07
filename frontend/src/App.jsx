@@ -1,105 +1,102 @@
 import axios from "axios";
 
 function App() {
-  const handlePayment = async (amount) => {
+  const processPayment = async (paymentAmount) => {
     try {
-    
-      const { data } = await axios.post(
+      const { data: orderData } = await axios.post(
         "http://localhost:3000/api/v1/payments/create-order",
         {
-          amount
-        }
+          amount: paymentAmount,
+        },
       );
 
-      const order = data.order;
+      const paymentOrder = orderData.order;
 
-      
-      const options = {
+      const checkoutConfig = {
         key: import.meta.env.VITE_API_RZP,
+        amount: paymentOrder.amount,
+        currency: paymentOrder.currency,
 
-        amount: order.amount,
-        currency: order.currency,
+        name: "Payment Portal",
+        description: "Demo Transaction",
 
-        name: "Razorpay Learning",
-        description: "Test Payment",
+        order_id: paymentOrder.id,
 
-        order_id: order.id,
-
-        handler: async function (response) {
-          console.log("Razorpay Response:", response);
+        handler: async (paymentResult) => {
+          console.log("Payment Response:", paymentResult);
 
           try {
-            
-            const verifyResponse = await axios.post(
+            const verificationResult = await axios.post(
               "http://localhost:3000/api/v1/payments/verify-payment",
-              response,
+              paymentResult,
             );
 
-            if (verifyResponse.data.success) {
-              alert("Payment Successful ");
+            if (verificationResult.data.success) {
+              alert("Payment completed successfully!");
             } else {
-              alert("Payment Verification Failed ");
+              alert("Payment verification was unsuccessful.");
             }
-          } catch (error) {
-            console.error("Verification Error:", error);
-            alert("Payment verification failed ");
+          } catch (verificationError) {
+            console.error("Payment Verification Error:", verificationError);
+            alert("Unable to verify the payment.");
           }
         },
 
         prefill: {
-          name: "Krishna",
-          email: "krishnapandit98329@gmail.com",
-          contact: "9999999999",
+          name: "Demo User",
+          email: "demo.user@example.com",
+          contact: "9000000000",
         },
 
         theme: {
-          color: "#3399cc",
+          color: "#4F46E5",
         },
       };
 
-      
-      const razorpay = new window.Razorpay(options);
-
-      razorpay.open();
-    } catch (error) {
-      console.error("Payment Error:", error);
-
-      alert("Unable to start payment");
+      const paymentGateway = new window.Razorpay(checkoutConfig);
+      paymentGateway.open();
+    } catch (paymentError) {
+      console.error("Payment Initialization Error:", paymentError);
+      alert("Unable to initialize payment.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
-        <div className="mb-6">
-          <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
-            <span className="text-3xl">💳</span>
-          </div>
-        </div>
-
-        <h1 className="text-2xl font-bold text-gray-800">Razorpay Payment</h1>
-
-        <p className="text-gray-500 mt-2 mb-6">Select an amount to continue</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <h1 className="text-2xl font-semibold text-gray-800 text-center mb-6">
+          Choose Transaction
+        </h1>
 
         <div className="space-y-3">
           <button
-            onClick={() => handlePayment(500)}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+            onClick={() => processPayment(250)}
+            className="w-full rounded-lg bg-indigo-600 py-3 text-white font-medium hover:bg-indigo-700 transition"
           >
-            Pay ₹500
+            ₹250
           </button>
 
           <button
-            onClick={() => handlePayment(1000)}
-            className="w-full py-3 bg-gray-100 text-gray-800 border border-gray-200 rounded-lg font-medium hover:bg-gray-200 transition"
+            onClick={() => processPayment(500)}
+            className="w-full rounded-lg bg-blue-600 py-3 text-white font-medium hover:bg-blue-700 transition"
           >
-            Pay ₹1000
+            ₹500
+          </button>
+
+          <button
+            onClick={() => processPayment(1000)}
+            className="w-full rounded-lg bg-emerald-600 py-3 text-white font-medium hover:bg-emerald-700 transition"
+          >
+            ₹1000
+          </button>
+
+          <button
+            onClick={() => processPayment(1500)}
+            className="w-full rounded-lg bg-gray-800 py-3 text-white font-medium hover:bg-gray-900 transition"
+          >
+            ₹1500
           </button>
         </div>
-
-        <p className="text-xs text-gray-400 mt-5">
-          🔒 Secure payment powered by Razorpay
-        </p>
       </div>
     </div>
   );

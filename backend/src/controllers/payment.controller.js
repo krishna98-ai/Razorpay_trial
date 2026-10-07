@@ -1,43 +1,46 @@
 import crypto from "crypto";
-import razorpay from "../config/razorpay.js";
+import paymentClient from "../config/razorpay.js";
 
-
-const createOrder = async (req, res) => {
+const generateOrder = async (req, res) => {
   try {
-    const {amount}=req.body;
-    const options = {
-      amount:amount*100,
+    const { amount: paymentAmount } = req.body;
+
+    const orderDetails = {
+      amount: paymentAmount * 100,
       currency: "INR",
-      receipt: `receipt_${Date.now()}`,
+      receipt: `payment_${Date.now()}`,
     };
 
-    const order = await razorpay.orders.create(options);
+    const createdOrder = await paymentClient.orders.create(orderDetails);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      order,
+      order: createdOrder,
     });
-  } catch (error) {
-    console.error("Create Order Error:", error);
+  } catch (orderError) {
+    console.error("Order Creation Error:", orderError);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Failed to create order",
+      message: "Unable to create payment order",
     });
   }
 };
 
-const verifyPayment = async (req, res) => {
+const confirmPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-      req.body;
+    const {
+      razorpay_order_id: orderReference,
+      razorpay_payment_id: paymentReference,
+      razorpay_signature: paymentSignature,
+    } = req.body;
 
-    const generatedSignature = crypto
+    const calculatedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .update(`${orderReference}|${paymentReference}`)
       .digest("hex");
 
-    if (generatedSignature === razorpay_signature) {
+    if (calculatedSignature === paymentSignature) {
       return res.status(200).json({
         success: true,
         message: "Payment verified successfully",
@@ -48,14 +51,14 @@ const verifyPayment = async (req, res) => {
       success: false,
       message: "Payment verification failed",
     });
-  } catch (error) {
-    console.error("Verification Error:", error);
+  } catch (verificationError) {
+    console.error("Payment Confirmation Error:", verificationError);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Something went wrong",
     });
   }
 };
 
-export { createOrder, verifyPayment };
+export { generateOrder, confirmPayment };
